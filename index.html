@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay AI Fraud Shield</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 500px;
+            width: 100%;
+        }
+        h2 {
+            color: #0b1a30;
+            margin-top: 0;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 15px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .stats-box {
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        button {
+            background-color: #3395FF;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1a75d1;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .safe {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .anomaly {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔒 AI Fraud Shield Check</h2>
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 25px;">
+        Type in the field below. Our machine learning engine will analyze your biometrics (typing intervals, mouse gestures, and rhythm) in the background to verify your identity.
+    </p>
+
+    <div class="input-group">
+        <label for="checkout-input">Type anything here to test:</label>
+        <input type="text" id="checkout-input" placeholder="e.g., Typing my verification phrase..." autocomplete="off">
+    </div>
+
+    <div class="stats-box">
+        <div class="stat-line"><span>⌨️ Typing Speed:</span> <span id="val-typing">0.0 char/s</span></div>
+        <div class="stat-line"><span>🖱️ Mouse Speed:</span> <span id="val-mouse">0.0 px/s</span></div>
+        <div class="stat-line"><span>❌ Error Rate:</span> <span id="val-errors">0%</span></div>
+    </div>
+
+    <button id="verify-btn">Verify Biometrics with AI</button>
+
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+    // Variables to track biometrics
+    let totalKeys = 0;
+    let backspaces = 0;
+    let startTime = null;
+    let mouseDistance = 0;
+    let lastMouseX = null;
+    let lastMouseY = null;
+    let lastMouseMoveTime = null;
+
+    const inputField = document.getElementById('checkout-input');
+
+    // 1. Capture Typing Dynamics
+    inputField.addEventListener('keydown', (e) => {
+        if (!startTime) startTime = Date.now();
+        totalKeys++;
+        
+        if (e.key === 'Backspace') {
+            backspaces++;
+        }
+        
+        // Calculate typing speed (characters per second)
+        const elapsed = (Date.now() - startTime) / 1000;
+        const typingSpeed = elapsed > 0 ? (totalKeys / elapsed).toFixed(1) : 0;
+        const errorRate = ((backspaces / totalKeys) * 100).toFixed(0);
+
+        document.getElementById('val-typing').innerText = `${typingSpeed} char/s`;
+        document.getElementById('val-errors').innerText = `${errorRate}%`;
+    });
+
+    // 2. Capture Mouse Dynamics
+    window.addEventListener('mousemove', (e) => {
+        const now = Date.now();
+        if (lastMouseX !== null && lastMouseY !== null && lastMouseMoveTime !== null) {
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            mouseDistance += dist;
+            
+            const dt = (now - lastMouseMoveTime) / 1000;
+            const mouseSpeed = dt > 0 ? (dist / dt).toFixed(0) : 0;
+            document.getElementById('val-mouse').innerText = `${mouseSpeed} px/s`;
+        }
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        lastMouseMoveTime = now;
+    });
+
+    // 3. Submit Biometrics to Backend AI for Verification
+    document.getElementById('verify-btn').addEventListener('click', async () => {
+        const elapsed = startTime ? (Date.now() - startTime) / 1000 : 1;
+        const typingSpeed = startTime ? totalKeys / elapsed : 0;
+        const errorRate = totalKeys > 0 ? backspaces / totalKeys : 0;
+        const mouseSpeed = mouseDistance / 5; // Simplified average
+
+        const payload = {
+            typing_speed: parseFloat(typingSpeed) || 0.0,
+            mouse_speed: parseFloat(mouseSpeed) || 0.0,
+            error_rate: parseFloat(errorRate) || 0.0
+        };
+
+        const resultBox = document.getElementById('result');
+        resultBox.style.display = 'block';
+        resultBox.className = 'result-box';
+        resultBox.innerText = 'Analyzing with Machine Learning...';
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            // If backend throws an error, catch and display it
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Server-side processing error');
+            }
+
+            const data = await response.json();
+            
+            // Map whichever score naming is used by backend
+            const finalScore = data.score !== undefined ? data.score : (data.risk_score !== undefined ? data.risk_score : 0);
+            
+            if (data.status === "SAFE") {
+                resultBox.className = 'result-box safe';
+                resultBox.innerHTML = `✅ VERIFICATION PASSED<br><small style="font-weight:normal;">Confidence Score: ${(finalScore * 100).toFixed(1)}%</small>`;
+            } else {
+                resultBox.className = 'result-box anomaly';
+                resultBox.innerHTML = `⚠️ SUSPICIOUS ANOMALY DETECTED<br><small style="font-weight:normal;">Risk Score: ${(finalScore * 100).toFixed(1)}%</small>`;
+            }
+        } catch (err) {
+            resultBox.className = 'result-box anomaly';
+            resultBox.innerHTML = `❌ Error: ${err.message}<br><small style="font-weight:normal;">Check if your FastAPI terminal displays any red error tracebacks!</small>`;
+        }
+    });
+</script>
+
+</body>
+</html>
